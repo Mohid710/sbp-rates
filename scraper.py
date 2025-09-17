@@ -1,39 +1,33 @@
-import requests
-from bs4 import BeautifulSoup
-import json
 from datetime import date
 
-# 1. Get the SBP KIBOR webpage
-url = "https://www.sbp.org.pk/ecodata/kibor_index.asp"
-res = requests.get(url)
-soup = BeautifulSoup(res.text, "html.parser")
+# Function to build KIBOR data
+def get_kibor_data(rates):
+    data = {
+        "baseRate": 22.00,  # update manually if needed
+        "kibor1M": rates.get("1Month"),
+        "kibor3M": rates.get("3Month"),
+        "kibor6M": rates.get("6Month"),
+        "kibor12M": rates.get("12Month"),
+        "lastUpdated": str(date.today())
+    }
+    return data
 
-# 2. Find the table rows
-rows = soup.select("table tr")[1:]  # skip header
-rates = {}
 
-for row in rows:
-    cols = [c.text.strip() for c in row.select("td")]
-    if cols and len(cols) >= 3:
-        tenor = cols[0].replace(" ", "")
-        offer = cols[2]
-        try:
-            rates[tenor] = float(offer)
-        except:
-            continue
+# Function to calculate interest
+def calculate_interest(principal, months, rate_percent):
+    monthly_rate = (rate_percent / 100) / 12   # convert annual % to monthly decimal
+    interest = principal * monthly_rate * months
+    total_payment = principal + interest
+    return interest, total_payment
 
-# 3. Build JSON
-data = {
-    "baseRate": 22.00,  # update manually if needed
-    "kibor1M": rates.get("1Month"),
-    "kibor3M": rates.get("3Month"),
-    "kibor6M": rates.get("6Month"),
-    "kibor12M": rates.get("12Month"),
-    "lastUpdated": str(date.today())
-}
 
-# 4. Save to rates.json
-with open("rates.json", "w") as f:
-    json.dump(data, f, indent=2)
-
-print("✅ SBP KIBOR rates updated")
+# Example test (you can remove this later)
+if __name__ == "__main__":
+    # Example rates
+    rates = {"1Month": 22.0, "3Month": 21.5, "6Month": 21.75, "12Month": 21.9}
+    
+    data = get_kibor_data(rates)
+    interest, total = calculate_interest(100000, 6, data["kibor1M"])
+    
+    print("Interest:", interest)
+    print("Total Payment:", total)
